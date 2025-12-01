@@ -39,20 +39,28 @@ export const paymentRouter = router({
         collection: 'orders',
         data: {
           _isPaid: false,
-          products: filteredProducts.map((prod) => prod.id),
+          products: filteredProducts.map((prod) => String(prod.id)),
           user: user.id,
         },
       })
 
       const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] =
-        []
+        filteredProducts.map((product) => {
+          const priceId = product.priceId
+          if (!priceId || typeof priceId !== 'string') {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Invalid or missing priceId for product ${String(
+                product.id
+              )}`,
+            })
+          }
 
-      filteredProducts.forEach((product) => {
-        line_items.push({
-          price: product.priceId!,
-          quantity: 1,
+          return {
+            price: priceId,
+            quantity: 1,
+          }
         })
-      })
 
       line_items.push({
         price: 'price_1OCeBwA19umTXGu8s4p2G3aX',
